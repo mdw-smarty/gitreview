@@ -2,20 +2,23 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
 var (
-	gitRemoteCommand         = "git remote -v"                            // ie. [origin	git@github.com:smarty/gitreview.git (fetch)]
-	gitStatusCommand         = "git status --porcelain -uall"             // parse-able output, including untracked
-	gitFetchCommand          = "git fetch"                                // --dry-run"  // for debugging
-	gitFetchPendingReview    = "->"                                       // ie. [7761a97..1bbecb6  master     -> origin/master]
-	gitRevListCommand        = "git rev-list --left-right %s...origin/%s" // 1 line per commit w/ prefix '<' (ahead) or '>' (behind)
-	gitErrorTemplate         = "[ERROR] Could not execute [%s]: %v" + "\n"
-	gitOmitCommand           = "git config --get review.omit"
-	gitSkipCommand           = "git config --get review.skip"
-	gitDefaultBranchCommand  = "git config --get review.branch"
-	gitStandardDefaultBranch = "master"
+	gitRemoteCommand        = "git remote -v"                            // ie. [origin	git@github.com:smarty/gitreview.git (fetch)]
+	gitStatusCommand        = "git status --porcelain -uall"             // parse-able output, including untracked
+	gitFetchCommand         = "git fetch"                                // --dry-run"  // for debugging
+	gitFetchPendingReview   = "->"                                       // ie. [7761a97..1bbecb6  master     -> origin/master]
+	gitRevListCommand       = "git rev-list --left-right %s...origin/%s" // 1 line per commit w/ prefix '<' (ahead) or '>' (behind)
+	gitErrorTemplate        = "[ERROR] Could not execute [%s]: %v" + "\n"
+	gitOmitCommand          = "git config --get review.omit"
+	gitSkipCommand          = "git config --get review.skip"
+	gitDefaultBranchCommand = "git config --get review.branch"
+	gitListBranchesCommand  = "git branch"
+	gitClassicDefaultBranch = "master"
+	gitHipsterDefaultBranch = "main"
 )
 
 func GitRevListCommand(branch string) string {
@@ -81,10 +84,15 @@ func (this *GitReport) GitOmitStatus() bool {
 func (this *GitReport) GitDefaultBranch() string {
 	out, _ := execute(this.RepoPath, gitDefaultBranchCommand)
 	branch := strings.TrimSpace(out)
-	if branch == "" {
-		return gitStandardDefaultBranch
+	if branch != "" {
+		return branch
 	}
-	return branch
+	rawBranches, _ := execute(this.RepoPath, gitListBranchesCommand)
+	branches := strings.Fields(rawBranches)
+	if slices.Contains(branches, gitHipsterDefaultBranch) {
+		return gitHipsterDefaultBranch
+	}
+	return gitClassicDefaultBranch
 }
 
 func (this *GitReport) GitFetch() {
