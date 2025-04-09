@@ -17,8 +17,8 @@ var (
 	gitSkipCommand          = "git config --get review.skip"
 	gitDefaultBranchCommand = "git config --get review.branch"
 	gitListBranchesCommand  = "git branch"
-	gitClassicDefaultBranch = "master"
-	gitHipsterDefaultBranch = "main"
+	gitDefaultBranchMaster  = "master"
+	gitDefaultBranchMain    = "main"
 )
 
 func GitRevListCommand(branch string) string {
@@ -89,10 +89,10 @@ func (this *GitReport) GitDefaultBranch() string {
 	}
 	rawBranches, _ := execute(this.RepoPath, gitListBranchesCommand)
 	branches := strings.Fields(rawBranches)
-	if slices.Contains(branches, gitHipsterDefaultBranch) {
-		return gitHipsterDefaultBranch
+	if slices.Contains(branches, gitDefaultBranchMain) {
+		return gitDefaultBranchMain
 	}
-	return gitClassicDefaultBranch
+	return gitDefaultBranchMaster
 }
 
 func (this *GitReport) GitFetch() {
