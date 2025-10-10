@@ -165,11 +165,11 @@ func (this *GitReviewer) PrintCodeReviewLogEntry() {
 
 	_, _ = fmt.Fprintf(writer, "\n\n##%s\n\n", time.Now().Format("2006-01-02"))
 	for _, review := range this.journal {
-		_, _ = fmt.Fprintln(writer, excludeSSHFingerprints(review))
+		_, _ = fmt.Fprintln(writer, excludeSSHFingerprintsAndWarnings(review))
 	}
 }
 
-// excludeSSHFingerprints removes SSH key fingerprints (and rendered 'randomart')
+// excludeSSHFingerprintsAndWarnings removes SSH key fingerprints (and rendered 'randomart')
 // which appear when the VisualHostKey SSH configuration parameter is set.
 // http://users.ece.cmu.edu/~adrian/projects/validation/validation.pdf
 //
@@ -187,7 +187,7 @@ func (this *GitReviewer) PrintCodeReviewLogEntry() {
 // |    E+.&.=o      |
 // |    ooo.X=.      |
 // +----[SHA256]-----+
-func excludeSSHFingerprints(report string) string {
+func excludeSSHFingerprintsAndWarnings(report string) string {
 	var b strings.Builder
 	for _, line := range strings.Split(report, "\n") {
 		line = strings.TrimSpace(line)
@@ -198,6 +198,9 @@ func excludeSSHFingerprints(report string) string {
 			continue
 		}
 		if strings.HasPrefix(line, "|") && strings.HasSuffix(line, "|") {
+			continue
+		}
+		if strings.HasPrefix(line, "** ") { // This prefix marks certain warnings, such as: ** WARNING: connection is not using a post-quantum key exchange algorithm.
 			continue
 		}
 		b.WriteString(line)
