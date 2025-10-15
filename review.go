@@ -191,7 +191,7 @@ func excludeSSHFingerprintsAndWarnings(report string) string {
 	var b strings.Builder
 	for _, line := range strings.Split(report, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "Host key fingerprint is ") {
+		if strings.HasPrefix(line, "Host key fingerprint is") {
 			continue
 		}
 		if strings.HasPrefix(line, "+") && strings.HasSuffix(line, "+") {
