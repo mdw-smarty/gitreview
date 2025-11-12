@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"maps"
+	"slices"
 	"sort"
 )
 
@@ -19,16 +21,8 @@ func sortUniqueKeys(maps ...map[string]string) (unique []string) {
 	return unique
 }
 
-func mapKeys(m map[string]string) (keys []string) {
-	for key := range m {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
 func printMapKeys(m map[string]string, preamble string) {
-	printStrings(mapKeys(m), preamble)
+	printStrings(slices.Collect(maps.Keys(m)), preamble)
 }
 
 func printStrings(paths []string, preamble string) {

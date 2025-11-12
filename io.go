@@ -9,31 +9,19 @@ import (
 	"strings"
 )
 
-func collectGitRepositories(gitRoots []string) (gits []string) {
-	for _, root := range gitRoots {
-		if root == "." {
-			continue
-		}
-		if strings.TrimSpace(root) == "" {
-			continue
-		}
-		listing, err := os.ReadDir(root)
+func collectGitRepositories(root string) (gits []string) {
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Println("Couldn't resolve path (skipping):", err)
-			continue
+			return err
 		}
-		for _, dirItem := range listing {
-			path := filepath.Join(root, dirItem.Name())
-			item, err := dirItem.Info()
-			if err != nil {
-				continue
-			}
-			if isGitRepository(path, item) {
-				gits = append(gits, path)
-			}
+		if isGitRepository(path, info) {
+			gits = append(gits, path)
 		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
 	}
-
 	return gits
 }
 

@@ -1,29 +1,20 @@
 package main
 
 import (
-	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"os/user"
-	"path/filepath"
 	"strings"
 )
 
 type Config struct {
-	GitFetch           bool
-	GitRepositoryPaths []string
-	GitRepositoryRoots []string
-	GitGUILauncher     string
-	OutputFilePath     string
-	ReviewAhead        bool
-	ReviewBehind       bool
-	ReviewError        bool
-	ReviewFetched      bool
-	ReviewJournal      bool
-	ReviewMessy        bool
+	GitFetch          bool
+	GitRepositoryRoot string
+	GitGUILauncher    string
+	OutputFilePath    string
 }
 
 func ReadConfig(version string) *Config {
@@ -61,55 +52,13 @@ func ReadConfig(version string) *Config {
 			"-->",
 	)
 
-	gitRoots := flags.String(
-		"roots", "CDPATH", ""+
-			"The name of the environment variable containing colon-separated\n"+
-			"path values to scan for any git repositories contained therein.\n"+
-			"Scanning is NOT recursive.\n"+
-			"NOTE: this flag will be ignored in the case that non-flag command\n"+
-			"line arguments representing paths to git repositories are provided.\n"+
-			"-->",
-	)
-
-	repoList := flags.String(
-		"roots-file", "", ""+
-			"A colon-separated list of file paths, where each file contains a\n"+
-			"list of repositories to examine, with one repository on a line.\n"+
-			"-->",
-	)
-
-	review := flags.String(
-		"review", "abejm", ""+
-			"Letter code of repository statuses to review; where (a) is ahead,\n"+
-			"origin/master (b) is behind origin/master, (e) has git errors,\n"+
-			"(f) has new fetched contents, and (m) is messy with uncommitted\n"+
-			"changes. (j) is like (f) except only 'smarty' repositories\n"+
-			"are considered\n"+
-			"-->",
-	)
-
 	_ = flags.Parse(os.Args[1:])
 
-	config.ReviewAhead = strings.ContainsAny(*review, "aA")
-	config.ReviewBehind = strings.ContainsAny(*review, "bB")
-	config.ReviewError = strings.ContainsAny(*review, "eE")
-	config.ReviewFetched = strings.ContainsAny(*review, "fF")
-	config.ReviewJournal = strings.ContainsAny(*review, "jJ")
-	config.ReviewMessy = strings.ContainsAny(*review, "mM")
-
-	config.GitRepositoryPaths = flags.Args()
-	roots := strings.Split(os.Getenv(*gitRoots), ":")
-
-	if len(*repoList) > 0 {
-		list := strings.Split(*repoList, ";")
-		for _, l := range list {
-			config.handleRepoFile(config.tryPaths(l, roots), roots)
-		}
+	working, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	if len(config.GitRepositoryPaths) == 0 {
-		config.GitRepositoryRoots = roots
-	}
+	config.GitRepositoryRoot = working
 
 	if !config.GitFetch {
 		log.Println("Running git fetch with --dry-run (updated repositories will not be reviewed).")
@@ -134,7 +83,7 @@ func (this *Config) OpenOutputWriter() io.WriteCloser {
 	}
 
 	stat, err := os.Stat(path)
-	if err == nil && err != os.ErrNotExist {
+	if err == nil && !errors.Is(err, os.ErrNotExist) {
 		file, err2 := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, stat.Mode())
 		if err2 == nil {
 			log.Println("Final report will be appended to", path)
@@ -148,66 +97,7 @@ func (this *Config) OpenOutputWriter() io.WriteCloser {
 	return os.Stdout
 }
 
-func (this *Config) handleRepoFile(path string, prefixes []string) {
-	file, err := os.Open(path)
-	if err != nil {
-		log.Fatalf("Path for roots-file cannot be opened: %s: %s", path, err)
-	}
-
-	i := 0
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if len(line) > 1 && line[0] != '#' {
-			line = this.tryPaths(line, prefixes)
-			this.GitRepositoryPaths = append(this.GitRepositoryPaths, line)
-			i++
-		}
-	}
-
-	_ = file.Close()
-	if err = scanner.Err(); err != nil {
-		log.Printf("Error reading roots-file: %s: %s", path, err)
-	}
-
-	log.Printf("Added %d repositories from file: %s", i, path)
-}
-
-func (this *Config) tryPaths(path string, prefixes []string) string {
-	path = strings.TrimSpace(path)
-	cnt := len(path)
-	if cnt == 0 {
-		return ""
-	}
-
-	if strings.HasPrefix(path, "~/") {
-		usr, _ := user.Current()
-		dir := usr.HomeDir
-		path = filepath.Join(dir, path[2:])
-	}
-
-	if !filepath.IsAbs(path) {
-		for _, p := range prefixes {
-			test := filepath.Join(p, path)
-			if _, err := os.Stat(test); err == nil {
-				return test
-			}
-		}
-	}
-
-	return path
-}
-
 const rawDoc = `
-
-#### SMARTY DISCLAIMER:
-
-Subject to the terms of the associated license agreement, this
-software is freely available for your use. This software is
-FREE, AS IN PUPPIES, and is a gift. Enjoy your new
-responsibility. This means that while we may consider
-enhancement requests, we may or may not choose to entertain
-requests at our sole and absolute discretion.
 
 # gitreview
 
@@ -238,9 +128,7 @@ repositories that were behind their origin is printed to
 stdout. Only repositories with "smarty" in their
 path are included in this report.
 
-Repositories are identified for consideration from path values
-supplied as non-flag command line arguments or via the roots
-flag (see details below).
+Repositories are scanned recursively from the working directory.
 
 Installation:
 
@@ -264,16 +152,6 @@ mark them to be omitted from the final report by adding a config variable
 to the repository. The following command will produce this result:
 
     git config --add review.omit true
-
-
-Specifying the ''default'' branch:
-
-This tool assumes that the default branch of all repositories is ''master''.
-If a repository uses a non-standard default branch (ie. ''main'', ''trunk'')
-and you want this tool to focus  reviews on commits pushed to that branch
-instead, run the following command:
-
-	git config --add review.branch <branch-name>
 
 
 CLI Flags:

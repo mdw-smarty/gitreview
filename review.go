@@ -25,19 +25,16 @@ type GitReviewer struct {
 
 func NewGitReviewer(config *Config) *GitReviewer {
 	return &GitReviewer{
-		config: config,
-		repoPaths: append(
-			collectGitRepositories(config.GitRepositoryRoots),
-			filterGitRepositories(config.GitRepositoryPaths)...,
-		),
-		erred:   make(map[string]string),
-		messy:   make(map[string]string),
-		ahead:   make(map[string]string),
-		behind:  make(map[string]string),
-		fetched: make(map[string]string),
-		journal: make(map[string]string),
-		omitted: make(map[string]string),
-		skipped: make(map[string]string),
+		config:    config,
+		repoPaths: collectGitRepositories(config.GitRepositoryRoot),
+		erred:     make(map[string]string),
+		messy:     make(map[string]string),
+		ahead:     make(map[string]string),
+		behind:    make(map[string]string),
+		fetched:   make(map[string]string),
+		journal:   make(map[string]string),
+		omitted:   make(map[string]string),
+		skipped:   make(map[string]string),
 	}
 }
 
@@ -96,26 +93,14 @@ func (this *GitReviewer) canJournal(report *GitReport) bool {
 }
 
 func (this *GitReviewer) ReviewAll() {
-	var review []map[string]string
-	if this.config.ReviewError {
-		review = append(review, this.erred)
-	}
-	if this.config.ReviewMessy {
-		review = append(review, this.messy)
-	}
-	if this.config.ReviewAhead {
-		review = append(review, this.ahead)
-	}
-	if this.config.ReviewBehind {
-		review = append(review, this.behind)
-	}
-	if this.config.ReviewFetched {
-		review = append(review, this.fetched)
-	}
-	if this.config.ReviewJournal {
-		review = append(review, this.journal)
-	}
-	reviewable := sortUniqueKeys(review...)
+	reviewable := sortUniqueKeys(
+		this.erred,
+		this.messy,
+		this.ahead,
+		this.behind,
+		this.fetched,
+		this.journal,
+	)
 	if len(reviewable) == 0 {
 		log.Println("Nothing to review at this time.")
 		return
