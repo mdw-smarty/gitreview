@@ -25,20 +25,6 @@ func collectGitRepositories(root string) (gits []string) {
 	return gits
 }
 
-func filterGitRepositories(paths []string) (gits []string) {
-	for _, path := range paths {
-		stat, err := os.Stat(path)
-		if err != nil {
-			log.Println("Couldn't resolve path (skipping):", err)
-			continue
-		}
-		if isGitRepository(path, stat) {
-			gits = append(gits, path)
-		}
-	}
-	return gits
-}
-
 func isGitRepository(path string, item os.FileInfo) bool {
 	if !item.IsDir() {
 		return false
