@@ -19,6 +19,7 @@ func collectGitRepositories(root string) (gits []string) {
 		}
 		if isGitRepository(path, info) {
 			gits = append(gits, path)
+			return filepath.SkipDir
 		}
 		return nil
 	})
