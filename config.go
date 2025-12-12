@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -54,11 +55,7 @@ func ReadConfig(version string) *Config {
 
 	_ = flags.Parse(os.Args[1:])
 
-	working, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	config.GitRepositoryRoot = working
+	config.GitRepositoryRoot = rootDir(flags.Arg(0))
 
 	if !config.GitFetch {
 		log.Println("Running git fetch with --dry-run (updated repositories will not be reviewed).")
@@ -66,6 +63,21 @@ func ReadConfig(version string) *Config {
 	}
 
 	return config
+}
+
+func rootDir(pathFlag string) string {
+	if len(pathFlag) > 0 {
+		root, err := filepath.Abs(pathFlag)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return root
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return filepath.Join(home, "src")
 }
 
 func (this *Config) OpenOutputWriter() io.WriteCloser {
