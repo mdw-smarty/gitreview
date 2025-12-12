@@ -140,7 +140,8 @@ repositories that were behind their origin is printed to
 stdout. Only repositories with "smarty" in their
 path are included in this report.
 
-Repositories are scanned recursively from the working directory.
+Repositories are scanned recursively from the directory supplied in the first non-flag arg.
+If no non-flag args are provided, scanning begins from $HOME/src.
 
 Installation:
 
