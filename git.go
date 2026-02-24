@@ -27,6 +27,7 @@ func GitRevListCommand(branch string) string {
 
 type GitReport struct {
 	RepoPath string
+	Branch   string
 
 	RemoteError  string
 	StatusError  string
@@ -107,6 +108,7 @@ func (this *GitReport) GitFetch() {
 
 func (this *GitReport) GitRevList() {
 	branch := this.GitDefaultBranch()
+	this.Branch = branch
 	command := GitRevListCommand(branch)
 	out, err := execute(this.RepoPath, command)
 	if err != nil {

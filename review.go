@@ -13,28 +13,30 @@ type GitReviewer struct {
 	config    *Config
 	repoPaths []string
 
-	erred   map[string]string
-	messy   map[string]string
-	ahead   map[string]string
-	behind  map[string]string
-	fetched map[string]string
-	journal map[string]string
-	omitted map[string]string
-	skipped map[string]string
+	erred        map[string]string
+	messy        map[string]string
+	ahead        map[string]string
+	behind       map[string]string
+	fetched      map[string]string
+	journal      map[string]string
+	omitted      map[string]string
+	skipped      map[string]string
+	aiReviewable map[string]string
 }
 
 func NewGitReviewer(config *Config) *GitReviewer {
 	return &GitReviewer{
-		config:    config,
-		repoPaths: collectGitRepositories(config.GitRepositoryRoot),
-		erred:     make(map[string]string),
-		messy:     make(map[string]string),
-		ahead:     make(map[string]string),
-		behind:    make(map[string]string),
-		fetched:   make(map[string]string),
-		journal:   make(map[string]string),
-		omitted:   make(map[string]string),
-		skipped:   make(map[string]string),
+		config:       config,
+		repoPaths:    collectGitRepositories(config.GitRepositoryRoot),
+		erred:        make(map[string]string),
+		messy:        make(map[string]string),
+		ahead:        make(map[string]string),
+		behind:       make(map[string]string),
+		fetched:      make(map[string]string),
+		journal:      make(map[string]string),
+		omitted:      make(map[string]string),
+		skipped:      make(map[string]string),
+		aiReviewable: make(map[string]string),
 	}
 }
 
@@ -70,6 +72,10 @@ func (this *GitReviewer) GitAnalyzeAll() {
 		}
 		if len(report.OmitOutput) > 0 {
 			this.omitted[report.RepoPath] += report.OmitOutput
+		}
+
+		if len(report.RevListBehind) > 0 && this.canJournal(report) && report.Branch != "" {
+			this.aiReviewable[report.RepoPath] = report.Branch
 		}
 
 		if this.config.GitFetch && len(report.FetchOutput) > 0 {
