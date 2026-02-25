@@ -74,7 +74,7 @@ func (this *GitReviewer) GitAnalyzeAll() {
 			this.omitted[report.RepoPath] += report.OmitOutput
 		}
 
-		if len(report.RevListBehind) > 0 && this.canJournal(report) && report.Branch != "" {
+		if len(report.RevListBehind) > 0 && this.isSmarty(report) && report.Branch != "" {
 			this.aiReviewable[report.RepoPath] = report.Branch
 		}
 
@@ -89,13 +89,15 @@ func (this *GitReviewer) GitAnalyzeAll() {
 }
 
 func (this *GitReviewer) canJournal(report *GitReport) bool {
-	if !strings.Contains(report.RemoteOutput, "smarty") { // Exclude externals from code review journal.
+	if !this.isSmarty(report) { // Exclude externals from code review journal.
 		return false
 	}
-	if _, found := this.omitted[report.RepoPath]; found {
-		return false
-	}
-	return true
+	_, omitted := this.omitted[report.RepoPath]
+	return !omitted
+}
+
+func (this *GitReviewer) isSmarty(report *GitReport) bool {
+	return strings.Contains(report.RemoteOutput, "smarty")
 }
 
 func (this *GitReviewer) ReviewAll() {
