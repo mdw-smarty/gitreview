@@ -52,6 +52,7 @@ func (this *GitReviewer) AIReviewAll() {
 
 	for _, repoPath := range paths {
 		branch := this.aiReviewable[repoPath]
+		log.Printf("AI reviewing %s (branch: %s)", repoPath, branch)
 		_, _ = fmt.Fprintf(file, "\n================================================================================\n")
 		_, _ = fmt.Fprintf(file, "## %s\n", repoPath)
 		_, _ = fmt.Fprintf(file, "================================================================================\n\n")
