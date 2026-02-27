@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -123,12 +124,12 @@ func (this *GitReviewer) ReviewAll() {
 	printMapKeys(this.skipped, "Repositories that were skipped: %d")
 	printStrings(reviewable, "Repositories to be reviewed: %d")
 
-	in := prompt(fmt.Sprintf("Press <ENTER> to initiate the review process (will open %d review windows), or 'q' to quit...", len(reviewable)))
-	if in == "q" {
-		os.Exit(0)
-	}
+	aiOutputDir := this.PrepareAIReviewDir()
+	total := len(reviewable)
 
-	for _, path := range reviewable {
+	for i, path := range reviewable {
+		prompt(fmt.Sprintf("[%d/%d] Press <ENTER> to review %s...", i+1, total, filepath.Base(path)))
+
 		log.Printf("Opening %s at %s", this.config.GitGUILauncher, path)
 		var err error
 		if this.config.GitGUILauncher == "gitk" {
@@ -142,7 +143,10 @@ func (this *GitReviewer) ReviewAll() {
 		if err != nil {
 			log.Println("Failed to open git GUI:", err)
 		}
-		time.Sleep(time.Millisecond * 25)
+
+		if branch, ok := this.aiReviewable[path]; ok && aiOutputDir != "" {
+			this.AIReviewRepo(path, branch, aiOutputDir)
+		}
 	}
 }
 

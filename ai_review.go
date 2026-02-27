@@ -6,68 +6,71 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 )
 
-func (this *GitReviewer) AIReviewAll() {
+func (this *GitReviewer) PrepareAIReviewDir() string {
 	if this.config.AIReviewer == "" {
-		return
+		return ""
 	}
 	if len(this.aiReviewable) == 0 {
-		return
+		return ""
 	}
 	if this.config.AIReviewer != "claude-code" {
 		log.Printf("Unsupported AI reviewer: %q (supported: \"claude-code\")", this.config.AIReviewer)
-		return
+		return ""
 	}
 	if _, err := exec.LookPath("claude"); err != nil {
 		log.Println("claude not found in PATH, skipping AI reviews.")
-		return
+		return ""
 	}
 
-	dir := "/tmp/code-review"
+	dir := filepath.Join("/tmp/code-review", time.Now().Format("2006-01-02-150405"))
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		log.Printf("Could not create AI review directory %s: %v", dir, err)
-		return
+		return ""
 	}
+	return dir
+}
+
+func (this *GitReviewer) AIReviewRepo(repoPath, branch, outputDir string) {
+	log.Printf("AI reviewing %s (branch: %s)", repoPath, branch)
 
 	now := time.Now()
-	filePath := filepath.Join(dir, now.Format("2006-01-02")+".md")
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		log.Printf("Could not open AI review file %s: %v", filePath, err)
+	review, err := runAIReview(repoPath, branch)
+
+	filename := deriveRepoFilename(repoPath) + ".md"
+	filePath := filepath.Join(outputDir, filename)
+
+	file, fileErr := os.Create(filePath)
+	if fileErr != nil {
+		log.Printf("Could not create AI review file %s: %v", filePath, fileErr)
 		return
 	}
 	defer func() { _ = file.Close() }()
 
-	_, _ = fmt.Fprintf(file, "# AI Code Review — %s\n", now.Format("2006-01-02 15:04:05"))
+	_, _ = fmt.Fprintf(file, "# AI Code Review: %s\n\n", repoPath)
+	_, _ = fmt.Fprintf(file, "**Branch:** %s\n", branch)
+	_, _ = fmt.Fprintf(file, "**Date:** %s\n\n", now.Format("2006-01-02 15:04:05"))
 
-	paths := make([]string, 0, len(this.aiReviewable))
-	for p := range this.aiReviewable {
-		paths = append(paths, p)
-	}
-	sort.Strings(paths)
-
-	for _, repoPath := range paths {
-		branch := this.aiReviewable[repoPath]
-		log.Printf("AI reviewing %s (branch: %s)", repoPath, branch)
-		_, _ = fmt.Fprintf(file, "\n================================================================================\n")
-		_, _ = fmt.Fprintf(file, "## %s\n", repoPath)
-		_, _ = fmt.Fprintf(file, "================================================================================\n\n")
-
-		review, err := runAIReview(repoPath, branch)
-		if err != nil {
-			log.Printf("AI review error for %s: %v", repoPath, err)
-			_, _ = fmt.Fprintf(file, "ERROR: %v\n", err)
-		} else {
-			_, _ = fmt.Fprintf(file, "%s\n", review)
-		}
+	if err != nil {
+		log.Printf("AI review error for %s: %v", repoPath, err)
+		_, _ = fmt.Fprintf(file, "ERROR: %v\n", err)
+	} else {
+		_, _ = fmt.Fprintf(file, "%s\n", review)
 	}
 
 	log.Printf("AI review written to %s", filePath)
 	_ = exec.Command("subl", filePath).Start()
+}
+
+func deriveRepoFilename(repoPath string) string {
+	parts := strings.Split(filepath.Clean(repoPath), string(filepath.Separator))
+	if len(parts) >= 2 {
+		return parts[len(parts)-2] + "--" + parts[len(parts)-1]
+	}
+	return parts[len(parts)-1]
 }
 
 func runAIReview(repoPath, branch string) (string, error) {
