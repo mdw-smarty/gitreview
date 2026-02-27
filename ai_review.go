@@ -26,7 +26,7 @@ func (this *GitReviewer) PrepareAIReviewDir() string {
 		return ""
 	}
 
-	dir := filepath.Join("/tmp/code-review", time.Now().Format("2006-01-02-150405"))
+	dir := filepath.Join(this.aiAuditFolder, "code-review", time.Now().Format("2006-01-02-150405"))
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		log.Printf("Could not create AI review directory %s: %v", dir, err)
 		return ""

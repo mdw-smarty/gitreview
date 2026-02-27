@@ -11,8 +11,9 @@ import (
 )
 
 type GitReviewer struct {
-	config    *Config
-	repoPaths []string
+	config        *Config
+	repoPaths     []string
+	aiAuditFolder string
 
 	erred        map[string]string
 	messy        map[string]string
@@ -27,17 +28,18 @@ type GitReviewer struct {
 
 func NewGitReviewer(config *Config) *GitReviewer {
 	return &GitReviewer{
-		config:       config,
-		repoPaths:    collectGitRepositories(config.GitRepositoryRoot),
-		erred:        make(map[string]string),
-		messy:        make(map[string]string),
-		ahead:        make(map[string]string),
-		behind:       make(map[string]string),
-		fetched:      make(map[string]string),
-		journal:      make(map[string]string),
-		omitted:      make(map[string]string),
-		skipped:      make(map[string]string),
-		aiReviewable: make(map[string]string),
+		config:        config,
+		repoPaths:     collectGitRepositories(config.GitRepositoryRoot),
+		aiAuditFolder: config.AIAuditFolder,
+		erred:         make(map[string]string),
+		messy:         make(map[string]string),
+		ahead:         make(map[string]string),
+		behind:        make(map[string]string),
+		fetched:       make(map[string]string),
+		journal:       make(map[string]string),
+		omitted:       make(map[string]string),
+		skipped:       make(map[string]string),
+		aiReviewable:  make(map[string]string),
 	}
 }
 
