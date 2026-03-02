@@ -26,13 +26,31 @@ func (this *GitReviewer) PrepareAIReviewDir() string {
 		return ""
 	}
 
+	auditFolder := this.resolveAIAuditFolder()
+	if auditFolder == "" {
+		log.Println("No AI audit folder configured, skipping AI reviews.")
+		return ""
+	}
+
 	now := time.Now()
-	dir := filepath.Join(this.aiAuditFolder, now.Format("2006"), now.Format("2006-01-02-150405"))
+	dir := filepath.Join(auditFolder, now.Format("2006"), now.Format("2006-01-02-150405"))
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		log.Printf("Could not create AI review directory %s: %v", dir, err)
 		return ""
 	}
 	return dir
+}
+
+func (this *GitReviewer) resolveAIAuditFolder() string {
+	folder := strings.TrimSpace(this.aiAuditFolder)
+	if folder == "" {
+		return ""
+	}
+	if path, found := os.LookupEnv(folder); found {
+		log.Printf("Found AI audit folder in environment variable: %s=%s", folder, path)
+		return path
+	}
+	return folder
 }
 
 func (this *GitReviewer) AIReviewRepo(repoPath, branch, outputDir string) {

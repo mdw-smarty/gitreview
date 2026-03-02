@@ -65,7 +65,8 @@ func ReadConfig(version string) *Config {
 	flags.StringVar(&config.AIAuditFolder,
 		"ai-audit", "SMARTY_REVIEW_AUDIT_FOLDER", ""+
 			"The path or name of the environment variable containing the\n"+
-			"path to your audit folder. This is where AI audit results will be deposited.",
+			"path to your audit folder. This is where AI audit results will be deposited.\n"+
+			"-->",
 	)
 
 	_ = flags.Parse(os.Args[1:])
