@@ -16,8 +16,6 @@ type Config struct {
 	GitRepositoryRoot string
 	GitGUILauncher    string
 	OutputFilePath    string
-	AIReviewer        string
-	AIAuditFolder     string
 }
 
 func ReadConfig(version string) *Config {
@@ -52,20 +50,6 @@ func ReadConfig(version string) *Config {
 		"fetch", true, ""+
 			"When false, suppress all git fetch operations via --dry-run.\n"+
 			"Repositories with updates will still be included in the review.\n"+
-			"-->",
-	)
-
-	flags.StringVar(&config.AIReviewer,
-		"ai", "claude-code", ""+
-			"AI reviewer for behind-origin repos. Set to empty to disable.\n"+
-			"Currently supported: \"claude-code\".\n"+
-			"-->",
-	)
-
-	flags.StringVar(&config.AIAuditFolder,
-		"ai-audit", "SMARTY_REVIEW_AUDIT_FOLDER", ""+
-			"The path or name of the environment variable containing the\n"+
-			"path to your audit folder. This is where AI audit results will be deposited.\n"+
 			"-->",
 	)
 
