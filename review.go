@@ -41,7 +41,14 @@ func NewGitReviewer(config *Config) *GitReviewer {
 
 func (this *GitReviewer) GitAnalyzeAll() {
 	log.Printf("Analyzing %d git repositories...", len(this.repoPaths))
-	log.Println("Legend: [!] = error; [M] = messy; [A] = ahead; [B] = behind; [F] = fetched; [O] = omitted; [S] = skipped;")
+	log.Println("Legend: ")
+	log.Println("- [!] = error")
+	log.Println("- [M] = messy")
+	log.Println("- [A] = ahead")
+	log.Println("- [B] = behind")
+	log.Println("- [F] = fetched")
+	log.Println("- [O] = omitted")
+	log.Println("- [S] = skipped")
 	reports := NewAnalyzer(workerCount).AnalyzeAll(this.repoPaths)
 	for _, report := range reports {
 		if len(report.StatusError) > 0 {
