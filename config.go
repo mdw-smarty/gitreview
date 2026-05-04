@@ -73,11 +73,15 @@ func rootDir(pathFlag string) string {
 		}
 		return root
 	}
-	home, err := os.UserHomeDir()
+	codePath := os.Getenv("CODEPATH")
+	if codePath != "" {
+		return filepath.Join(codePath, "src")
+	}
+	working, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
-	return filepath.Join(home, "src")
+	return working
 }
 
 func (this *Config) OpenOutputWriter() io.WriteCloser {
